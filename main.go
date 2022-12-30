@@ -16,6 +16,27 @@ import (
 )
 
 func main() {
+	var (
+		// Universal markup builders.
+		menu     = &tele.ReplyMarkup{ResizeKeyboard: true}
+		selector = &tele.ReplyMarkup{}
+
+		// Reply buttons.
+		btnHelp     = menu.Text("ℹ Help")
+		btnSettings = menu.Text("⚙ Settings")
+
+		// Inline buttons.
+		//
+		// Pressing it will cause the client to
+		// send the bot a callback.
+		//
+		// Make sure Unique stays unique as per button kind
+		// since it's required for callback routing to work.
+		//
+		btnPrev = selector.Data("⬅", "prev")
+		btnNext = selector.Data("➡", "next")
+	)
+
 	godotenv.Load()
 	pref := tele.Settings{
 		Token:  os.Getenv("TELEGRAM_KEY"),
@@ -28,12 +49,27 @@ func main() {
 		return
 	}
 
+	menu.Reply(
+		menu.Row(btnHelp),
+		menu.Row(btnSettings),
+	)
+
+	selector.Inline(
+		selector.Row(btnPrev, btnNext),
+	)
+
 	b.Handle("/start", func(c tele.Context) error {
-		return c.Send("Hello!")
+		return c.Send("Hello!", menu)
 	})
 
-	b.Handle("/help", func(c tele.Context) error {
-		return c.Send("use /ask followed by a question or statement to generate a response")
+	// On reply button pressed (message)
+	b.Handle(&btnHelp, func(c tele.Context) error {
+		return c.Edit("Here is some help: ...")
+	})
+
+	// On inline button pressed (callback)
+	b.Handle(&btnPrev, func(c tele.Context) error {
+		return c.Respond()
 	})
 
 	b.Handle("/client", func(c tele.Context) error {
